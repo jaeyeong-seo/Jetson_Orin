@@ -1,6 +1,6 @@
 # Jetson Orin experiments on Vortex
 
-Status: branch scaffold; parameter values and additional hierarchy are not yet specified.
+Status: experiment workspace prepared; no model or parameter changes selected.
 
 ## Goal
 
@@ -13,7 +13,8 @@ separate decision.
 ## Configuration and architecture
 
 Use Vortex's existing TOML configuration and supported per-build overrides.
-Keep named experiment settings reproducible, and use a separate ignored build
+Keep named experiment settings in `experiments/jetson_orin/configs/`, local
+outputs in its ignored `results/` directory, and use a separate ignored build
 directory such as `build_jetson_orin` to avoid mixing build outputs.
 
 Before implementing the model, specify the desired core/cluster shape,
