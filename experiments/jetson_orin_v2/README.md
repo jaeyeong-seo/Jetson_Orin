@@ -26,8 +26,8 @@ GPU
         ├── Core 1
         │   ├── Compute Slice 0–3
         │   └── LMEM 32 KB / 32 banks
-        ├── L1 D-Cache 0: 160 KiB 권장안 → Core 0 전용
-        ├── L1 D-Cache 1: 160 KiB 권장안 → Core 1 전용
+        ├── L1 D-Cache 0: 160 KiB → Core 0 전용
+        ├── L1 D-Cache 1: 160 KiB → Core 1 전용
         ├── L1 I-Cache 0: 128 KB → Core 0 전용
         └── L1 I-Cache 1: 128 KB → Core 1 전용
 
@@ -95,13 +95,13 @@ LMEM에 둔 타일은 LSU를 통한 load, 필요하면 Matrix Load를 거쳐 레
 | --- | --- | --- |
 | Socket당 개수 | 2개 | 2개 |
 | Core 매핑 | Core당 1개 전용 | Core당 1개 전용 |
-| 인스턴스당 용량 | 160 KiB 권장안 | 128 KB |
-| 전체 용량 | 320 KiB 권장안 | 256 KB |
+| 인스턴스당 용량 | 160 KiB | 128 KB |
+| 전체 용량 | 320 KiB | 256 KB |
 | Cache line | 128 B | 미지정 |
 | Cache sector | 32 B | 미지정 |
 | Bank 수 | 2 banks | 미지정 |
-| Way 수 | 5-way 권장안 | 미지정 |
-| 교체 정책 | 기존 기본값 FIFO 유지 권장 | 기존 기본값 유지 |
+| Way 수 | 5-way | 미지정 |
+| 교체 정책 | 기존 기본값 FIFO 유지 | 기존 기본값 유지 |
 
 L1 D-Cache는 line당 4개 sector를 갖는다.
 
@@ -109,9 +109,9 @@ L1 D-Cache는 line당 4개 sector를 갖는다.
 
 192 KB 조건은 기존 Core별 배치에 맞춰 **Core당 데이터 용량 합계 192 KiB**로
 해석한다. 이 계산에서 KB는 1024 B 기준이다. LMEM 32 KiB는 유지한다.
-따라서 D-Cache는 기존 150 KiB 목표에서 160 KiB로 늘리는 안을 권장한다.
+따라서 D-Cache는 기존 150 KiB 목표에서 160 KiB로 늘리는 구성을 채택한다.
 
-| 항목 | Core당 권장안 |
+| 항목 | Core당 구성 |
 | --- | --- |
 | L1 D-Cache 데이터 용량 | 160 KiB = 163,840 B |
 | LMEM 데이터 용량 | 32 KiB = 32,768 B |
@@ -132,7 +132,7 @@ RTL 구조 변경 없이 관련 설정값으로 표현할 수 있는 안이며, 
 두 Core 전체로는 D-Cache 320 KiB + LMEM 64 KiB = 384 KiB이다.
 Tag, valid bit 등의 관리 정보는 위 데이터 용량 합계에 포함하지 않는다.
 
-현재 Vortex에서 D-Cache와 LMEM은 별도 저장소이다. 이 권장안은 두 데이터 용량의
+현재 Vortex에서 D-Cache와 LMEM은 별도 저장소이다. 이 구성은 두 데이터 용량의
 합계를 맞추며, 하나의 물리 SRAM을 동적으로 나누는 unified L1/shared-memory
 구조를 새로 구현하는 요구사항은 포함하지 않는다.
 
@@ -178,8 +178,8 @@ LPDDR 세대, 채널 분할 및 메모리 타이밍은 아직 지정하지 않�
 | Tensor 2:4 sparsity | 활성화 |
 | Tensor DSM | 활성화 |
 | WGMMA | 비활성화 |
-| Wide Load/Store | 활성화 권장안. 아직 사용자 선택 미확정 |
-| Matrix Load/Store | 활성화 권장안. 아직 사용자 선택 미확정 |
+| Wide Load/Store | 활성화 |
+| Matrix Load/Store | 활성화 |
 
 SFU는 유지한다. 별도 지시가 없는 기능은 기준 Vortex의 기본값을 따른다.
 
@@ -200,10 +200,10 @@ integer 계열은 INT32로 누산/출력한다. 모든 형식 활성화가 임�
 2:4 sparsity와 MX 형식을 위해 Tensor metadata 경로가 필요하지만,
 그 경로가 WGMMA 활성화를 요구하지는 않는다.
 
-### 7.2 Wide / Matrix Load·Store 권장 이유
+### 7.2 Wide / Matrix Load·Store
 
 일반 GPU에서 넓은 메모리 접근과 행렬 fragment 전송은 유용하다.
-현재 Vortex의 기본값은 두 확장 모두 비활성화이며, v2에서는 둘 다 활성화를 권장한다.
+현재 Vortex의 기본값은 두 확장 모두 비활성화이며, v2에서는 둘 다 활성화한다.
 
 - Wide: 연속한 FP32 word 2개/4개를 묶어 64/128-bit 접근을 표현한다.
 - Matrix: WMMA가 읽는 레지스터 배치로 행렬 fragment를 load/store한다.
@@ -219,7 +219,6 @@ Vortex에서는 두 명령 계열을 여러 scalar load/store micro-op으로 확
 - RF access 폭 및 1R1W 포트의 bank별/전체 적용 단위.
 - Warp 수, warp당 thread 수 및 동작 클럭.
 - Tensor Core의 tile 크기 및 형식별 처리량.
-- D-Cache 160 KiB / 5-way 권장안과 Wide/Matrix Load·Store 권장안의 채택 여부.
 - L1 I-Cache의 line/sector 크기.
 - 별도 지시가 없는 cache associativity 및 메모리 타이밍.
 - XLEN=32에서 외부 DRAM 64 GB 전체를 사용하는 물리 주소/VM 지원 방식.
@@ -227,8 +226,8 @@ Vortex에서는 두 명령 계열을 여러 scalar load/store micro-op으로 확
   지원이 생기지는 않는다.
 
 위 항목의 값을 임의로 정하지 않는다.
-KB/MB/GB는 요구사항의 표기를 유지하며, 실제 byte 단위의 환산 기준은
-설정을 적용할 때 명시한다.
+RF, LMEM 및 cache 용량의 KB/MB는 각각 1024 B 기준의 KiB/MiB로 해석한다.
+외부 DRAM의 64 GB 표기는 유지하며, 실제 byte 단위 용량은 구현 시 명시한다.
 
 ## 9. 작업 공간
 
