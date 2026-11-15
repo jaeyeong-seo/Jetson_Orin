@@ -15,6 +15,13 @@ commit `7f90ab6e99fde3e01580da5202b8ccdf202f25a6`이다.
 | Socket | Cluster 안에 1개, 전체 1개 |
 | Core | Socket 안에 2개, 전체 2개 |
 | Compute Slice | Core당 4개, 전체 8개 |
+| Warp size | 32 threads |
+| Resident warps | Slice당 최대 8개, Core당 최대 32개, 전체 최대 64개 |
+| Resident CTAs | Core당 최대 16개, 전체 최대 32개 |
+| Clock | 기준 Vortex 기본 설정 유지. 현재 기준값 400 MHz |
+
+Core당 resident thread 상한은 1,024개이며 전체 상한은 2,048개이다.
+CTA 상주 수는 상한값으로, CTA당 warp 수와 LMEM 사용량 등에 따라 실제로는 줄어들 수 있다.
 
 ```text
 GPU
@@ -56,12 +63,21 @@ FP32 항목은 요청한 연산 자원의 명칭이며, CUDA 소프트웨어 호
 | --- | --- |
 | 용량 | 64 KB |
 | Bank 수 | 2 banks |
-| 포트 구성 | 1R1W |
-| Access 폭 | 1024 bits = 128 B |
+| Bank당 용량 | 32 KiB |
+| Bank당 포트 구성 | 1R1W |
+| Bank당 Access 폭 | 1024 bits = 128 B |
 
-2 bank가 용량을 균등 분할하면 bank당 32 KB이다.
-1024-bit access 폭이 bank당 폭인지 RF 전체 폭인지, 1R1W의 적용 단위는
-구현 전에 확정한다. 현재 문서는 요청값을 그대로 기록한다.
+용량 64 KiB를 2개 bank에 균등 분할한다. Access 폭과 1R1W는 모두 bank 기준이다.
+
+현재 Vortex는 thread당 INT register 32개와 FP register 32개를 가진다.
+XLEN=32, FLEN=32에서 논리적 RF 데이터 용량은 다음과 같다.
+
+- Thread당: `(32 INT + 32 FP) × 4 B = 256 B`.
+- Warp당: `32 threads × 256 B = 8 KiB`.
+- Slice당: `8 resident warps × 8 KiB = 64 KiB`.
+
+따라서 Slice당 최대 8 warps가 RF 목표 용량에 맞는다. 제어/metadata 저장소는
+이 RF 데이터 용량 계산과 별개이다.
 
 SFU는 각 Compute Slice에 포함하고 기존 기능과 세부 구성을 유지한다.
 구체적인 SFU lane 수는 새로 지정하지 않는다. TFU는 비활성화한다.
@@ -97,13 +113,16 @@ LMEM에 둔 타일은 LSU를 통한 load, 필요하면 Matrix Load를 거쳐 레
 | Core 매핑 | Core당 1개 전용 | Core당 1개 전용 |
 | 인스턴스당 용량 | 160 KiB | 128 KB |
 | 전체 용량 | 320 KiB | 256 KB |
-| Cache line | 128 B | 미지정 |
-| Cache sector | 32 B | 미지정 |
+| Cache line | 128 B | 128 B |
+| Cache sector | 32 B | 기본 구조 유지: 별도 sector 분할 없이 line과 같은 128 B |
 | Bank 수 | 2 banks | 미지정 |
 | Way 수 | 5-way | 미지정 |
 | 교체 정책 | 기존 기본값 FIFO 유지 | 기존 기본값 유지 |
 
 L1 D-Cache는 line당 4개 sector를 갖는다.
+I-Cache line은 D-Cache와 같은 128 B로 정한다. 현재 I-Cache의 RTL/SimX는
+별도 sector 분할을 하지 않으므로 그 구조를 유지한다. 각 128 KiB I-Cache는
+1,024 lines를 가진다. I-Cache의 way 수 등 별도 지시가 없는 항목은 기본값을 따른다.
 
 ### 4.1 D-Cache + LMEM 합계 192 KiB
 
@@ -214,16 +233,19 @@ Vortex에서는 두 명령 계열을 여러 scalar load/store micro-op으로 확
 컴파일러/커널이 해당 명령을 사용해야 효과가 있다. Wide는 F 확장과 FLEN=32가
 필요하며, 현재의 XLEN=32, FP32 목표와 부합한다.
 
-## 8. 아직 확정하지 않은 세부 사항
+## 8. 설정 매핑과 남은 검토 사항
 
-- RF access 폭 및 1R1W 포트의 bank별/전체 적용 단위.
-- Warp 수, warp당 thread 수 및 동작 클럭.
-- Tensor Core의 tile 크기 및 형식별 처리량.
-- L1 I-Cache의 line/sector 크기.
-- 별도 지시가 없는 cache associativity 및 메모리 타이밍.
-- XLEN=32에서 외부 DRAM 64 GB 전체를 사용하는 물리 주소/VM 지원 방식.
-  기준 설정의 메모리 주소 폭은 32 bits이며, VM 활성화만으로 64 GB 전체 주소
-  지원이 생기지는 않는다.
+- `VX_CFG_NUM_THREADS` 목표는 32, `VX_CFG_NUM_WARPS`는 Core당 값이므로 목표는 32이다.
+  Core당 4 Compute Slice 각각에 최대 8 warps를 배치한다. 기본 issue/fetch 폭의
+  자동 파생만으로 4 Compute Slice를 가정하지 않고, 구현 시 해당 구조를 명시적으로 맞춘다.
+- 현재 RTL의 `NUM_CTA_MAX` / `NUM_CTA_SLOTS`는 Core당 warp 수에 묶여 있다.
+  따라서 32 resident warps를 유지하면서 resident CTA만 16개로 제한하려면
+  CTA admission 상한을 별도로 반영해야 한다. 16-CTA 상한은 아직 구현하지 않았다.
+- Tensor Core의 tile 크기 및 형식별 처리량은 아직 별도로 확정하지 않았다.
+  Warp size 32를 반영한 기준 Vortex의 파생 geometry를 먼저 확인한다.
+- 별도 지시가 없는 cache associativity 및 메모리 타이밍은 기본 설정을 따른다.
+- XLEN=32에서 외부 DRAM 64 GB 전체를 사용하는 물리 주소/VM 방식은
+  기준 Vortex 기본 설정을 확인한 뒤 결정한다. 현재는 별도 주소 확장을 요구하지 않는다.
 
 위 항목의 값을 임의로 정하지 않는다.
 RF, LMEM 및 cache 용량의 KB/MB는 각각 1024 B 기준의 KiB/MiB로 해석한다.
