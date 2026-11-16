@@ -628,7 +628,7 @@ public:
       bool emit = true;
       bool progressed = false;
       if (ibuf_room && decode_latch.try_push(trace)) {
-        uint32_t offset = trace->PC & (VX_CFG_MEM_BLOCK_SIZE - 1);
+        uint32_t offset = trace->PC & (MEM_PAYLOAD_SIZE - 1);
         std::memcpy(&trace->code, mem_rsp.data->data() + offset, sizeof(uint32_t));
         progressed = true;
       }

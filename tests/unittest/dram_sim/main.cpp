@@ -43,7 +43,8 @@ static DramSim::Config a100_config() {
 // Peak bytes per core cycle: a 32 B burst every two DRAM clocks per
 // pseudo-channel (two per channel), or every eight clocks per GDDR6 channel.
 static double peak_bandwidth(const DramSim::Config& config) {
-  double bytes_per_clock = (config.type == DramSim::Type::GDDR6) ? 4.0 : 32.0;
+  double bytes_per_clock = (config.type == DramSim::Type::GDDR6
+                         || config.type == DramSim::Type::LPDDR5) ? 4.0 : 32.0;
   return config.num_channels * bytes_per_clock * (config.data_rate / 2.0) / config.core_clock;
 }
 
@@ -220,6 +221,35 @@ int main() {
   double gopen = unloaded_latency(gddr6_one, [](int i) { return uint64_t(i % 8) * 32; });
   double gconflict = unloaded_latency(gddr6_one, gddr6_conflict);
   check(gopen < gconflict, "GDDR6 row conflicts cost more than row hits", gconflict - gopen);
+
+  DramSim::Config lpddr5{DramSim::Type::LPDDR5, 16, 32, 400, 6400, 0, 0};
+  double lp_peak = peak_bandwidth(lpddr5);
+  check(lp_peak == 512.0, "LPDDR5-6400 x256 peak is 204.8 GB/s at 400 MHz", lp_peak);
+  double lp_bw = stream_bandwidth(lpddr5, 2048);
+  check(lp_bw > 0.5 * lp_peak && lp_bw <= lp_peak,
+        "LPDDR5 native transactions sustain 50-100% of peak", lp_bw);
+  auto lp_one = lpddr5;
+  lp_one.num_channels = 1;
+  double lp_bw1 = stream_bandwidth(lp_one, 2048);
+  check(lp_bw / lp_bw1 > 15 && lp_bw / lp_bw1 < 17,
+        "LPDDR5 bandwidth scales with sixteen x16 channels", lp_bw / lp_bw1);
+
+  {
+    DramSim dram(lp_one);
+    bool completed = true;
+    for (uint64_t addr : {0ull, 0x01001000ull, 0x01009000ull, 0x02001000ull, 0ull}) {
+      g_responses = 0;
+      dram.send_request(0, addr, false, on_response, nullptr);
+      for (uint32_t cycle = 0; cycle < 10000 && g_responses == 0; ++cycle) {
+        dram.tick();
+      }
+      if (g_responses != 1) {
+        completed = false;
+        break;
+      }
+    }
+    check(completed, "LPDDR5 nonzero rows and row changes complete", completed);
+  }
 
   if (g_errors != 0) {
     printf("FAILED: %d check(s)\n", g_errors);

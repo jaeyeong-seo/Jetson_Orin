@@ -2600,7 +2600,7 @@ protected:
           }
           auto& req_j = ReqIn.at(j).peek();
           bool same = merge_line_
-            ? ((req_j.addr >> params_.bank_select_addr_start) == (req_i.addr >> params_.bank_select_addr_start))
+            ? ((req_j.addr >> params_.sector_select_addr_start) == (req_i.addr >> params_.sector_select_addr_start))
             : ((req_j.addr >> params_.word_select_addr_start) == (req_i.addr >> params_.word_select_addr_start)
                && req_j.tag == req_i.tag);
           if (same) {

@@ -33,12 +33,14 @@ enum class Standard {
   HBM2,   // HBM2/HBM2E: 128-bit channels of two 64-bit pseudo-channels, 32 B bursts
   HBM3,   // HBM3, a 128-bit channel per pair of 64-bit channels, 32 B bursts
   GDDR6,  // GDDR6 x16 channels, 32 B bursts, 2 KB pages
+  LPDDR5, // x16 channels, timed by Ramulator's native LPDDR5 device
 };
 
 inline Standard parse_standard(const std::string& name) {
   if (name == "HBM2") return Standard::HBM2;
   if (name == "HBM3") return Standard::HBM3;
   if (name == "GDDR6") return Standard::GDDR6;
+  if (name == "LPDDR5") return Standard::LPDDR5;
   throw std::invalid_argument("unknown DRAM standard " + name);
 }
 
@@ -110,6 +112,9 @@ struct geometry_t {
 // bursts (minimalist open page, 128 B). Read-to-write is Ramulator's: HBM's
 // assumes a one-clock write preamble, GDDR6's adds the bus turnaround.
 inline geometry_t geometry(Standard standard) {
+  if (standard == Standard::LPDDR5) {
+    return geometry_t{0, 2, 2, 7, 3, false, 0};
+  }
   if (standard == Standard::GDDR6) {
     return geometry_t{0, 2, 2, 6, 2, false, 4};
   }
@@ -183,6 +188,9 @@ inline uint32_t get(const clock_timing_t (&bus)[B], const ns_timing_t (&array)[A
 // after its column command: HBM's bank-level read-to-precharge is the larger of
 // its short and long forms.
 inline clocks_t clocks(Standard standard, uint32_t data_rate) {
+  if (standard == Standard::LPDDR5) {
+    throw std::invalid_argument("LPDDR5 requires the Ramulator DRAM backend");
+  }
   const int tck = tck_ps(data_rate);
   clocks_t c{};
   if (standard == Standard::GDDR6) {
@@ -221,6 +229,9 @@ struct refresh_t {
 };
 
 inline refresh_t refresh(Standard standard, uint32_t data_rate) {
+  if (standard == Standard::LPDDR5) {
+    throw std::invalid_argument("LPDDR5 requires the Ramulator DRAM backend");
+  }
   const int tck = tck_ps(data_rate);
   refresh_t r{};
   if (standard == Standard::GDDR6) {

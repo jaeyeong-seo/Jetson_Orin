@@ -1,0 +1,23 @@
+category: jetson_orin_v2
+defaults:
+  xlen: [32]
+  drivers: [simx]
+  tier: full
+  touches: [profiles/jetson_orin_v2.json, sim/simx, sim/common/dram_sim.cpp, sw/common/dram_timing.h, third_party/ramulator_ext/lpddr5.cpp]
+tests:
+  - id: instruction-fills
+    via: script
+    run: "make -C tests/unittest/icache_fill run PROFILE=jetson_orin_v2"
+  - id: lpddr5
+    via: script
+    run: "make -C tests/unittest/dram_sim run PROFILE=jetson_orin_v2"
+  - id: vecadd
+    via: blackbox
+    app: vecadd
+    flags: --profile=jetson_orin_v2
+  - id: tensor-fp16
+    via: blackbox
+    app: sgemm_tcu
+    args: -n16
+    configs: -DITYPE=fp16 -DOTYPE=fp32
+    flags: --profile=jetson_orin_v2

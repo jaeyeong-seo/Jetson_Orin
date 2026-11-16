@@ -27,7 +27,10 @@ $(RAMULATOR_EXT_DIR)/gddr6.o: ramulator/src/dram/impl/GDDR6.cpp | ramulator/libr
 	mkdir -p $(RAMULATOR_EXT_DIR)
 	$(CXX) $(RAMULATOR_EXT_CXXFLAGS) -c $< -o $@
 
-$(RAMULATOR_EXT_DIR)/libramulator-vortex.so: $(RAMULATOR_EXT_DIR)/gddr6.o ramulator/libramulator.so
+$(RAMULATOR_EXT_DIR)/lpddr5.o: $(RAMULATOR_EXT_DIR)/lpddr5.cpp ramulator/src/dram/impl/LPDDR5.cpp | ramulator/libramulator.so
+	$(CXX) $(RAMULATOR_EXT_CXXFLAGS) -c $< -o $@
+
+$(RAMULATOR_EXT_DIR)/libramulator-vortex.so: $(RAMULATOR_EXT_DIR)/gddr6.o $(RAMULATOR_EXT_DIR)/lpddr5.o ramulator/libramulator.so
 	$(CXX) -shared $(filter %.o,$^) -Lramulator -lramulator -o $@
 
 ramulator: ramulator/libramulator.so $(RAMULATOR_EXT_DIR)/libramulator-vortex.so

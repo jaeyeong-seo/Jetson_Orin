@@ -12,6 +12,7 @@
 // limitations under the License.
 
 #include "socket.h"
+#include "mem/read_block_adapter.h"
 #include "cache_cluster.h"
 #include "core.h"
 #include "cluster.h"
@@ -60,8 +61,8 @@ public:
     icaches_ = CacheCluster::Create(sname, cores_per_socket, VX_CFG_NUM_ICACHES, Cache::Config{
       !VX_CFG_ICACHE_ENABLED,
       VX_CFG_ICACHE_SIZE,            // size
-      log2ceil(VX_CFG_L1_LINE_SIZE), // L
-      log2ceil(VX_CFG_L1_LINE_SIZE), // S (no sectoring)
+      log2ceil(VX_CFG_ICACHE_LINE_SIZE), // L
+      log2ceil(VX_CFG_ICACHE_SECTOR_SIZE), // S
       log2ceil(sizeof(uint32_t)), // W
       VX_CFG_ICACHE_NUM_WAYS,          // ways
       log2ceil(VX_CFG_ICACHE_NUM_BANKS), // B
@@ -222,6 +223,22 @@ public:
                             simobject_->unit_tlb_client(), false, true, false, true);
 #endif
 
+    std::vector<SimChannel<MemReq>*> icache_reqs(VX_CFG_ICACHE_MEM_PORTS);
+    std::vector<SimChannel<MemRsp>*> icache_rsps(VX_CFG_ICACHE_MEM_PORTS);
+    for (uint32_t p = 0; p < VX_CFG_ICACHE_MEM_PORTS; ++p) {
+      icache_reqs.at(p) = &icaches_->mem_req_out.at(p);
+      icache_rsps.at(p) = &icaches_->mem_rsp_in.at(p);
+      if constexpr (VX_CFG_ICACHE_SECTOR_SIZE > VX_CFG_MEM_BLOCK_SIZE) {
+        snprintf(sname, 100, "%s-ifill%u", name.c_str(), p);
+        auto adapter = ReadBlockAdapter::Create(sname, VX_CFG_ICACHE_SECTOR_SIZE,
+            VX_CFG_ICACHE_MSHR_SIZE * VX_CFG_ICACHE_NUM_BANKS * __UP(VX_CFG_NUM_ICACHES));
+        icaches_->mem_req_out.at(p).bind(&adapter->ReqIn);
+        adapter->RspOut.bind(&icaches_->mem_rsp_in.at(p));
+        icache_reqs.at(p) = &adapter->ReqOut;
+        icache_rsps.at(p) = &adapter->RspIn;
+      }
+    }
+
     // find overlap
     uint32_t overlap = __MIN(VX_CFG_ICACHE_MEM_PORTS, VX_CFG_L1_MEM_PORTS);
 
@@ -258,8 +275,8 @@ public:
         + VX_CFG_EXT_TEX_ENABLED + VX_CFG_EXT_RTU_ENABLED + VX_CFG_EXT_DXA_ENABLED;
     snprintf(sname, 100, "%s-mem_arb0", name.c_str());
     auto sock_arb = MemArbiter::Create(sname, ArbiterType::Priority, kSocketArbIns, 1);
-    icaches_->mem_req_out.at(0).bind(&sock_arb->ReqIn.at(0));
-    sock_arb->RspOut.at(0).bind(&icaches_->mem_rsp_in.at(0));
+    icache_reqs.at(0)->bind(&sock_arb->ReqIn.at(0));
+    sock_arb->RspOut.at(0).bind(icache_rsps.at(0));
     dcaches_->mem_req_out.at(0).bind(&sock_arb->ReqIn.at(1));
     sock_arb->RspOut.at(1).bind(&dcaches_->mem_rsp_in.at(0));
     // A unit port reaches the arbiter through the unit MMU under VM.
@@ -303,8 +320,8 @@ public:
       auto l1_arb = MemArbiter::Create(sname, ArbiterType::Priority, 2 * overlap, overlap, 1, 1);
 
       if (i < overlap) {
-        icaches_->mem_req_out.at(i).bind(&l1_arb->ReqIn.at(i));
-        l1_arb->RspOut.at(i).bind(&icaches_->mem_rsp_in.at(i));
+        icache_reqs.at(i)->bind(&l1_arb->ReqIn.at(i));
+        l1_arb->RspOut.at(i).bind(icache_rsps.at(i));
 
         dcaches_->mem_req_out.at(i).bind(&l1_arb->ReqIn.at(overlap + i));
         l1_arb->RspOut.at(overlap + i).bind(&dcaches_->mem_rsp_in.at(i));
@@ -316,7 +333,7 @@ public:
           bind_mem_port(i, dcaches_->mem_req_out.at(i), dcaches_->mem_rsp_in.at(i));
         } else {
           // if more icache ports
-          bind_mem_port(i, icaches_->mem_req_out.at(i), icaches_->mem_rsp_in.at(i));
+          bind_mem_port(i, *icache_reqs.at(i), *icache_rsps.at(i));
         }
       }
     }

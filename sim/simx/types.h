@@ -59,10 +59,11 @@ namespace vortex {
 
 constexpr uint32_t SIMX_NUM_WORKERS = (SIMX_MT > 1) ? SIMX_MT : 1;
 
-// One memory block (a cache line / DRAM transfer unit). Carried by
-// MemReq/MemRsp in TLM data-path mode. Use `shared_ptr<mem_block_t>` so
-// MSHR-coalesced replays share a single fill buffer without copying.
-using mem_block_t = std::array<uint8_t, VX_CFG_MEM_BLOCK_SIZE>;
+// Instruction fills may exceed the data-side transfer size. Payload capacity
+// covers both; data-side offsets and byte enables retain the transfer granule.
+constexpr uint32_t MEM_PAYLOAD_SIZE = (VX_CFG_ICACHE_SECTOR_SIZE > VX_CFG_MEM_BLOCK_SIZE)
+                                  ? VX_CFG_ICACHE_SECTOR_SIZE : VX_CFG_MEM_BLOCK_SIZE;
+using mem_block_t = std::array<uint8_t, MEM_PAYLOAD_SIZE>;
 
 typedef uint8_t Byte;
 

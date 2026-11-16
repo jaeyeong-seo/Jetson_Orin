@@ -20,9 +20,9 @@ CXXFLAGS += -std=c++17 -Wall -Wextra -Wfatal-errors -Werror
 CXXFLAGS += -fPIC
 CXXFLAGS += -I$(SRC_DIR) -I$(SRC_DIR)/dxa -I$(SRC_DIR)/tex -I$(SRC_DIR)/om -I$(SRC_DIR)/raster -I$(SRC_DIR)/rtu -I$(SRC_DIR)/kmu -I$(SRC_DIR)/mem -I$(SRC_DIR)/dtm -I$(SW_COMMON_DIR) -I$(SIM_COMMON_DIR) -I$(ROOT_DIR)/sw -I$(ROOT_DIR)/hw -I$(THIRD_PARTY_DIR)
 CXXFLAGS += -I$(THIRD_PARTY_DIR)/softfloat/source/include
-CXXFLAGS += -I$(THIRD_PARTY_DIR)/ramulator/ext/spdlog/include
-CXXFLAGS += -I$(THIRD_PARTY_DIR)/ramulator/ext/yaml-cpp/include
-CXXFLAGS += -I$(THIRD_PARTY_DIR)/ramulator/src
+CXXFLAGS += -isystem $(THIRD_PARTY_DIR)/ramulator/ext/spdlog/include
+CXXFLAGS += -isystem $(THIRD_PARTY_DIR)/ramulator/ext/yaml-cpp/include
+CXXFLAGS += -isystem $(THIRD_PARTY_DIR)/ramulator/src
 CXXFLAGS += -DVX_CFG_XLEN=$(XLEN) -DVX_CFG_XLEN_$(XLEN)
 CXXFLAGS += $(CONFIGS)
 

@@ -460,7 +460,7 @@ bool Decompressor::on_icache_rsp(instr_trace_t* trace, const mem_block_t& line) 
     // Extract the 4-byte word at the address we fetched. fetch_addr()
     // factors in whether this rsp is a refetch completion (high half of a
     // cross-word 32b) or a fresh fetch.
-    uint32_t line_offset = fetch_addr(trace) & (VX_CFG_MEM_BLOCK_SIZE - 1);
+    uint32_t line_offset = fetch_addr(trace) & (MEM_PAYLOAD_SIZE - 1);
     uint32_t word = 0;
     std::memcpy(&word, line.data() + line_offset, sizeof(uint32_t));
 

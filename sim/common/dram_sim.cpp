@@ -129,7 +129,7 @@ private:
     uint32_t inflight;
   };
 
-  static constexpr uint32_t tx_size_ = dram_timing::kBurstSize;
+  uint32_t tx_size_;
 
   // Addresses above a channel's 8 Gb alias, which only affects row hits.
   static constexpr uint64_t channel_size_ = dram_timing::kChannelSize;
@@ -172,13 +172,26 @@ private:
     set_timing(dram["timing"], config.data_rate, dram_timing::gddr6_bus_timing, dram_timing::gddr6_array_timing);
   }
 
+  static void set_lpddr5_device(YAML::Node dram, const Config& config) {
+    if (config.data_rate != 6400) {
+      throw std::invalid_argument("the LPDDR5 backend supports the 6400 MT/s preset");
+    }
+    dram["impl"] = "LPDDR5BankRows";
+    dram["org"]["preset"] = "LPDDR5_16Gb_x16";
+    dram["org"]["channel_width"] = 16;
+    dram["org"]["rank"] = 2;
+    dram["timing"]["preset"] = "LPDDR5_6400";
+  }
+
   YAML::Node channel_config(uint32_t ch) const {
     YAML::Node config;
     config["Frontend"]["impl"] = "GEM5";
     auto memory_system = config["MemorySystem"];
     memory_system["impl"] = "GenericDRAM";
     memory_system["clock_ratio"] = 1;
-    if (config_.type == Type::GDDR6) {
+    if (config_.type == Type::LPDDR5) {
+      set_lpddr5_device(memory_system["DRAM"], config_);
+    } else if (config_.type == Type::GDDR6) {
       set_gddr6_device(memory_system["DRAM"], config_);
     } else {
       set_hbm_device(memory_system["DRAM"], config_);
@@ -272,8 +285,13 @@ private:
 
 public:
   RamulatorDram(const Config& config)
-    : config_(config)
+    : tx_size_(config.type == Type::LPDDR5 ? 16 : dram_timing::kBurstSize)
+    , config_(config)
     , channels_(config.num_channels) {
+    if (config.block_size == 0
+     || (config.block_size > tx_size_ && (config.block_size % tx_size_) != 0)) {
+      throw std::invalid_argument("DRAM request size must contain whole device transactions");
+    }
     auto geometry = dram_timing::geometry(config.type);
     row_visit_bits_ = geometry.log2_visit;
     bank_bits_ = geometry.bank_bits();
