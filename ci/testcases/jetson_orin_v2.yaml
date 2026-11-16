@@ -5,6 +5,9 @@ defaults:
   tier: full
   touches: [profiles/jetson_orin_v2.json, sim/simx, sim/common/dram_sim.cpp, sw/common/dram_timing.h, third_party/ramulator_ext/lpddr5.cpp]
 tests:
+  - id: cache-writeback
+    via: script
+    run: "make -C tests/unittest/cache_writeback run PROFILE=jetson_orin_v2"
   - id: instruction-fills
     via: script
     run: "make -C tests/unittest/icache_fill run PROFILE=jetson_orin_v2"

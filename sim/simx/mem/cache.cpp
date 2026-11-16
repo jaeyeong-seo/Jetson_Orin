@@ -880,6 +880,8 @@ protected:
     pending_write_reqs_ = 0;
     pending_fill_reqs_ = 0;
     rand_ctr_ = 0;
+    fill_wb_line_ = -1;
+    fill_wb_sector_ = 0;
     adm_seq_ctr_ = 0;
   #ifdef DBG_MEM_BANK0_WDELAY
     dbg_mem_req_free_ = 0;
@@ -1346,8 +1348,8 @@ private:
   }
 
   // Install a fill that reached the pipe head. Returns false when the
-  // victim's dirty writeback beats don't fit in the egress queue; the fill
-  // stays at the pipe head and retries.
+  // victim's dirty writeback beats have not drained into the egress queue;
+  // the fill stays at the pipe head and retries.
   //
   // Replay is mutex with fill (priority gating in processInputs), so any
   // line evicted here has no in-flight replay. If the line is already
@@ -1391,15 +1393,18 @@ private:
       line_id = resident_id; // add a sector to the resident copy; no eviction
     } else {
       int32_t free_id = -1, repl_id = 0;
-      line_id = set.select_victim(config_.repl_policy, rand_ctr_, &free_id, &repl_id);
-      // The FIFO pointer names the victim even when another way is free.
-      if (config_.repl_policy == Cache::FIFO) {
-        line_id = repl_id;
+      if (fill_wb_line_ != -1) {
+        line_id = fill_wb_line_;
+      } else {
+        line_id = set.select_victim(config_.repl_policy, rand_ctr_, &free_id, &repl_id);
+        // The FIFO pointer names the victim even when another way is free.
+        if (config_.repl_policy == Cache::FIFO) {
+          line_id = repl_id;
+        }
       }
       auto &victim_line = set.lines.at(line_id);
 
-      // Count the victim's dirty sectors; the egress queue must accept all
-      // their writeback beats before we mutate any state.
+      // Preserve all-at-once admission when the victim fits in the queue.
       uint32_t wb_count = 0;
       if (config_.write_back) {
         for (const auto &s : victim_line.sectors) {
@@ -1408,19 +1413,21 @@ private:
           }
         }
       }
-      if (wb_count > 0 && (this->mem_req_out.size() + wb_count) > this->mem_req_out.capacity()) {
+      const bool split_wb = wb_count > this->mem_req_out.capacity();
+      if (wb_count != 0 && !split_wb && (this->mem_req_out.size() + wb_count) > this->mem_req_out.capacity()) {
         return false; // stall
       }
 
-      if (config_.repl_policy == Cache::RANDOM) {
-        ++rand_ctr_;
-      }
-
       // Emit one writeback per dirty sector.
-      for (uint32_t s = 0; s < victim_line.sectors.size(); ++s) {
+      for (uint32_t s = fill_wb_sector_; s < victim_line.sectors.size(); ++s) {
         auto &sec = victim_line.sectors.at(s);
         if (!(config_.write_back && sec.valid && sec.dirty)) {
           continue;
+        }
+        if (split_wb && this->mem_req_out.full()) {
+          fill_wb_line_ = line_id;
+          fill_wb_sector_ = s;
+          return false;
         }
         MemReq wb;
         wb.addr   = params_.mem_addr_sector(bank_id_, set_id, victim_line.tag, s);
@@ -1432,6 +1439,11 @@ private:
         this->send_mem_req(wb);
         DT(3, this->name() << " writeback: " << wb);
         ++perf_stats_.evictions;
+      }
+      fill_wb_line_ = -1;
+      fill_wb_sector_ = 0;
+      if (config_.repl_policy == Cache::RANDOM) {
+        ++rand_ctr_;
       }
 
       // Repurpose the victim way for the new line: all sectors invalid.
@@ -2294,6 +2306,8 @@ private:
   uint64_t pending_write_reqs_;
   uint64_t pending_fill_reqs_;
   uint32_t rand_ctr_;
+  int32_t fill_wb_line_;
+  uint32_t fill_wb_sector_;
   uint64_t adm_seq_ctr_;  // bank admission-order stamp (see bank_req_t::adm_seq)
 
   // Fill-forward window: chain key and sector staged by the last accepted fill.
