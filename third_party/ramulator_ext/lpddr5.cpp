@@ -30,6 +30,17 @@ public:
             throw std::runtime_error("invalid LPDDR5 bank state");
           }
         };
+      // ACT-1 has not completed activation, so neither query can report an open row.
+      m_rowhits[m_levels["bank"]][m_commands(op.first)] =
+        [](Node* node, int cmd, int target_id, Clk_t clk) {
+          return node->m_state != m_states["Pre-Opened"]
+              && Lambdas::RowHit::Bank::RDWR<LPDDR5>(node, cmd, target_id, clk);
+        };
+      m_rowopens[m_levels["bank"]][m_commands(op.first)] =
+        [](Node* node, int cmd, int target_id, Clk_t clk) {
+          return node->m_state != m_states["Pre-Opened"]
+              && Lambdas::RowOpen::Bank::RDWR<LPDDR5>(node, cmd, target_id, clk);
+        };
     }
   }
 };
