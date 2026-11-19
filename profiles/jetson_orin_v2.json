@@ -70,6 +70,7 @@
     "VX_CFG_L2_ENABLE": false,
     "VX_CFG_L3_ENABLE": true,
     "VX_CFG_L3_SIZE": 4194304,
+    "VX_CFG_L3_NUM_BANKS": 8,
     "VX_CFG_L3_LINE_SIZE": 128,
     "VX_CFG_L3_SECTOR_SIZE": 32
   },
