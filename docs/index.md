@@ -10,6 +10,7 @@
 
 ## Architecture
 
+- [jetson_orin_profile](jetson_orin_profile.md): Jetson Orin 프로파일 작성 목차
 - [Codebase Layout](codebase.md): summary of the repo file tree
 - [Microarchitecture](designs/microarchitecture.md): Vortex pipeline microarchitectural details and reconfigurability — the natural first read before the subsystem design documents
 - [Hardware IP Library](hardware_library.md): catalog of the reusable RTL modules in `hw/rtl/libs/`
