@@ -3,7 +3,7 @@
   "description": "Jetson Orin v3 RV64 configuration for SimX.",
   "xlen": 64,
   "core": {
-    "VX_CFG_NUM_WARPS": 4,
+    "VX_CFG_NUM_WARPS": 16,
     "VX_CFG_NUM_THREADS": 32,
     "VX_CFG_SIMD_WIDTH": 32,
     "VX_CFG_ISSUE_WIDTH": 4,
@@ -100,7 +100,7 @@
     "dram_bandwidth_gbs": 204.8
   },
   "sources": {
-    "core": "RV64, four warps per core, 32 threads per warp. The SimX register file uses 32 64-bit integer slots and 32 64-bit FP backing slots per thread (64 KiB per core). Architectural FLEN is 32. Four LSU blocks with eight lanes each.",
+    "core": "RV64, four compute slices per core, four warps per slice and 32 threads per warp. Each slice has 64 KiB of SimX storage for 32 64-bit integer and 32 64-bit FP backing slots per thread (256 KiB per core). Architectural FLEN is 32. Four LSU blocks with eight lanes each.",
     "cache": "User-defined v3: 192 KiB write-through D-cache and 164 KiB shared memory per core.",
     "chip": "User-defined v3: two cores with L2 bypass and a shared 4 MiB write-back L3.",
     "platform": "400 MHz Vortex default. LPDDR5-6400: sixteen x16 channels provide a 256-bit interface and 204.8 GB/s theoretical peak. Ramulator's native LPDDR5_6400 preset supplies uncalibrated device timings; full 64 GB addressing is deferred.",
