@@ -1,76 +1,178 @@
 # jetson_orin_profile
 
-## 목차
+## Table of Contents
 
-1. [기본 정보](#1-기본-정보)
-2. [core — 코어 구성](#2-core)
-3. [chip — 칩 구성](#3-chip)
-4. [platform — 플랫폼 구성](#4-platform)
-5. [reference — 비교·검증 기준](#5-reference)
-6. [sources — 출처·근거](#6-sources)
+- [name](#name)
+- [description](#description)
+- [xlen](#xlen)
+- [core](#core)
+- [chip](#chip)
+- [platform](#platform)
+- [reference](#reference)
+- [sources](#sources)
 
-## 1. 기본 정보
+## `name`
 
-### name
+## `description`
 
-### description
+## `xlen`
 
-### xlen
+## `core`
 
-## 2. core
+### `VX_CFG_NUM_WARPS`
 
-### 워프·스레드·스케줄링·페치
+### `VX_CFG_NUM_THREADS`
 
-### ALU·FPU·LSU·TFU 연산 유닛
+### `VX_CFG_ISSUE_WIDTH`
 
-### L1 캐시
+### `VX_CFG_NUM_ALU_LANES`
 
-### 공유 메모리
+### `VX_CFG_NUM_FPU_LANES`
 
-### 가상 메모리·원자 연산
+### `VX_CFG_NUM_LSU_LANES`
 
-### 데이터 형식·특수 함수
+### `VX_CFG_DCACHE_SIZE`
 
-### Tensor Core·비동기 전송
+### `VX_CFG_FETCH_WIDTH`
 
-### 배리어·텍스처
+### `VX_CFG_LMEM_LOG_SIZE`
 
-### 연산 처리율 비율
+### `VX_CFG_LMEM_SIZE`
 
-## 3. chip
+### `VX_CFG_LMEM_NUM_BANKS`
 
-### 클러스터·코어 수
+### `VX_CFG_VM_ENABLE`
 
-### L2 캐시 용량·연관도·뱅크
+### `VX_CFG_EXT_A_ENABLE`
 
-### L2 연결 지연·MSHR
+### `VX_CFG_EXT_ZACAS_ENABLE`
 
-### 호스트 데이터 복사·L2 경로
+### `VX_CFG_EXT_ZFHMIN_ENABLE`
 
-## 4. platform
+### `VX_CFG_EXT_TFU_ENABLE`
 
-### GPU 클럭
+### `VX_CFG_NUM_TFU_LANES`
 
-### 메모리 종류·뱅크 수
+### `VX_CFG_EXT_TCU_ENABLE`
 
-### 메모리 데이터 전송률·최대 대역폭
+### `VX_CFG_TCU_TF32_ENABLE`
 
-### 메모리 지연
+### `VX_CFG_TCU_FP8_ENABLE`
 
-## 5. reference
+### `VX_CFG_TCU_INT8_ENABLE`
 
-### FP32 연산 유닛 수
+### `VX_CFG_TCU_SPARSE_ENABLE`
 
-### DRAM 대역폭
+### `VX_CFG_TCU_WGMMA_ENABLE`
 
-### L1·L2·DRAM 접근 지연
+### `VX_CFG_EXT_DXA_ENABLE`
 
-## 6. sources
+### `VX_CFG_NUM_BARRIERS`
 
-### 공식 문서
+### `VX_CFG_EXT_TEX_ENABLE`
 
-### 실측 자료·측정 환경
+### `VX_CFG_FDIV_PE_RATIO`
 
-### Vortex 매핑 근거·가정
+### `VX_CFG_FSQRT_PE_RATIO`
 
-### 미확인 항목
+### `VX_CFG_FCVT_PE_RATIO`
+
+### `VX_CFG_FMA64_PE_RATIO`
+
+### `VX_CFG_DCACHE_NUM_BANKS`
+
+## `chip`
+
+### `VX_CFG_NUM_CLUSTERS`
+
+### `VX_CFG_NUM_CORES`
+
+### `VX_CFG_L2_ENABLE`
+
+### `VX_CFG_L2_SIZE`
+
+### `VX_CFG_L2_NUM_WAYS`
+
+### `VX_CFG_L2_NUM_BANKS`
+
+### `VX_CFG_CP_LLC_CLIENT`
+
+### `VX_CFG_L2_LINK_LATENCY`
+
+### `VX_CFG_L2_MSHR_SIZE`
+
+## `platform`
+
+### `VX_CFG_PLATFORM_MEMORY_NUM_BANKS`
+
+### `VX_CFG_PLATFORM_CLOCK_RATE`
+
+### `VX_CFG_PLATFORM_MEMORY_PEAK_BW`
+
+### `VX_CFG_PLATFORM_MEMORY_TYPE`
+
+### `VX_CFG_PLATFORM_MEMORY_DATA_RATE`
+
+### `VX_CFG_PLATFORM_MEMORY_LATENCY`
+
+## `reference`
+
+### `fp32_lanes`
+
+### `dram_bandwidth_gbs`
+
+### `l1_hit_cycles`
+
+### `l2_hit_cycles`
+
+### `dram_cycles`
+
+## `sources`
+
+### `NUM_CORES, NUM_WARPS, NUM_THREADS, ISSUE_WIDTH`
+
+### `DCACHE_SIZE`
+
+### `L2_SIZE, L2_NUM_WAYS, L2_NUM_BANKS`
+
+### `PLATFORM_MEMORY_TYPE, PLATFORM_MEMORY_NUM_BANKS, PLATFORM_MEMORY_DATA_RATE`
+
+### `PLATFORM_CLOCK_RATE, PLATFORM_MEMORY_PEAK_BW`
+
+### `FETCH_WIDTH`
+
+### `CP_LLC_CLIENT`
+
+### `LMEM_NUM_BANKS`
+
+### `VM_ENABLE, EXT_A_ENABLE, EXT_ZACAS_ENABLE, EXT_ZFHMIN_ENABLE, EXT_TFU_ENABLE`
+
+### `EXT_TCU_ENABLE, TCU_*, EXT_DXA_ENABLE, EXT_RTU_ENABLE`
+
+### `xlen`
+
+### `NUM_BARRIERS`
+
+### `EXT_TEX_ENABLE`
+
+### `EXT_RASTER_ENABLE, EXT_OM_ENABLE`
+
+### `NUM_TFU_LANES`
+
+### `NUM_ALU_LANES, NUM_FPU_LANES, NUM_LSU_LANES`
+
+### `FMA64_PE_RATIO`
+
+### `FDIV_PE_RATIO, FSQRT_PE_RATIO, FCVT_PE_RATIO`
+
+### `DCACHE_NUM_BANKS`
+
+### `LMEM_SIZE, LMEM_LOG_SIZE, DCACHE_SIZE`
+
+### `reference`
+
+### `L2_LINK_LATENCY`
+
+### `PLATFORM_MEMORY_LATENCY`
+
+### `L2_MSHR_SIZE`
