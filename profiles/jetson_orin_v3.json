@@ -3,7 +3,7 @@
   "description": "Jetson Orin v3 RV64 configuration for SimX.",
   "xlen": 64,
   "core": {
-    "VX_CFG_NUM_WARPS": 16,
+    "VX_CFG_NUM_WARPS": 48,
     "VX_CFG_NUM_THREADS": 32,
     "VX_CFG_SIMD_WIDTH": 32,
     "VX_CFG_ISSUE_WIDTH": 4,
@@ -36,18 +36,18 @@
     "VX_CFG_LMEM_NUM_BANKS": 16,
     "VX_CFG_VM_ENABLE": true,
     "VX_CFG_EXT_F_ENABLE": true,
-    "VX_CFG_EXT_D_ENABLE": false,
-    "VX_CFG_EXT_A_ENABLE": false,
-    "VX_CFG_EXT_ZACAS_ENABLE": false,
+    "VX_CFG_EXT_D_ENABLE": true,
+    "VX_CFG_EXT_A_ENABLE": true,
+    "VX_CFG_EXT_ZACAS_ENABLE": true,
     "VX_CFG_EXT_ZFHMIN_ENABLE": true,
-    "VX_CFG_EXT_TFU_ENABLE": false,
+    "VX_CFG_EXT_TFU_ENABLE": true,
     "VX_CFG_EXT_TCU_ENABLE": true,
     "VX_CFG_EXT_DXA_ENABLE": false,
     "VX_CFG_EXT_TEX_ENABLE": true,
     "VX_CFG_EXT_RTU_ENABLE": true,
     "VX_CFG_EXT_RASTER_ENABLE": true,
     "VX_CFG_EXT_OM_ENABLE": true,
-    "VX_CFG_EXT_LDST_WIDE_ENABLE": true,
+    "VX_CFG_EXT_LDST_WIDE_ENABLE": false,
     "VX_CFG_EXT_LDST_MATRIX_ENABLE": true,
     "VX_CFG_TCU_TYPE": "TFR",
     "VX_CFG_TCU_PE_RATIO": 1,
@@ -65,7 +65,10 @@
     "VX_CFG_TCU_WGMMA_ENABLE": false,
     "VX_CFG_DCACHE_LATENCY": 6,
     "VX_CFG_DCACHE_MSHR_SIZE": 16,
-    "VX_CFG_DCACHE_REPL_POLICY": 1
+    "VX_CFG_DCACHE_REPL_POLICY": 1,
+    "VX_CFG_ICACHE_LATENCY": 5,
+    "VX_CFG_L1_LINK_LATENCY": 0,
+    "VX_CFG_L2_TLB_LATENCY": 4
   },
   "chip": {
     "VX_CFG_NUM_CLUSTERS": 1,
@@ -84,7 +87,9 @@
     "VX_CFG_L3_MSHR_SIZE": 32,
     "VX_CFG_L3_LATENCY": 5,
     "VX_CFG_L3_REPL_POLICY": 1,
-    "VX_CFG_L3_WRITEBACK": 1
+    "VX_CFG_L3_WRITEBACK": 1,
+    "VX_CFG_L2_LATENCY": 5,
+    "VX_CFG_L2_LINK_LATENCY": 0
   },
   "platform": {
     "VX_CFG_PLATFORM_CLOCK_RATE": 400,
@@ -100,7 +105,7 @@
     "dram_bandwidth_gbs": 204.8
   },
   "sources": {
-    "core": "RV64, four compute slices per core, four warps per slice and 32 threads per warp. Each slice has 64 KiB of SimX storage for 32 64-bit integer and 32 64-bit FP backing slots per thread (256 KiB per core). Architectural FLEN is 32. Four LSU blocks with eight lanes each.",
+    "core": "RV64, four compute slices per core, twelve warps per slice and 32 threads per warp. SimX models 32 64-bit integer and 32 64-bit FP backing slots per thread. Architectural FLEN is 64. Four LSU blocks with eight lanes each.",
     "cache": "User-defined v3: 192 KiB write-through D-cache and 164 KiB shared memory per core.",
     "chip": "User-defined v3: two cores with L2 bypass and a shared 4 MiB write-back L3.",
     "platform": "400 MHz Vortex default. LPDDR5-6400: sixteen x16 channels provide a 256-bit interface and 204.8 GB/s theoretical peak. Ramulator's native LPDDR5_6400 preset supplies uncalibrated device timings; full 64 GB addressing is deferred.",
