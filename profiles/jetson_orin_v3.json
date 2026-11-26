@@ -81,6 +81,7 @@
     "VX_CFG_NUM_DCACHES": 2,
     "VX_CFG_MEM_BLOCK_SIZE": 64,
     "VX_CFG_L2_ENABLE": false,
+    "VX_CFG_PTW_NUM_WALKERS": 4,
     "VX_CFG_L3_ENABLE": true,
     "VX_CFG_L3_SIZE": 4194304,
     "VX_CFG_L3_NUM_BANKS": 8,
